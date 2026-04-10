@@ -12,7 +12,11 @@ function(leos_add_board TARGET PRETTY_NAME REVISION)
     )
 
     # Include common platform in board executables
-    target_link_libraries(${TARGET} common_platform)
+    target_link_libraries(${TARGET} 
+        common_platform 
+        pico_stdlib 
+        leos_log
+    )
 
     # Modify the below lines to enable/disable output over UART/USB
     pico_enable_stdio_uart(${TARGET} 0)
