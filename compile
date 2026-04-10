@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 usage() {
@@ -90,8 +90,66 @@ else
 fi
 mkdir -p "$BUILD_DIR"
 
+# Auto-detect Pico SDK (if not set already)
+if [[ -z "${PICO_SDK_PATH:-}" ]]; then
+    for d in "$HOME"/.pico-sdk/sdk/*; do
+        if [[ -f "$d/pico_sdk_init.cmake" ]]; then
+            export PICO_SDK_PATH="$d"
+            printf "==> Auto-detected PICO_SDK_PATH: %s\n" "$PICO_SDK_PATH"
+            break
+        fi
+    done
+fi
+
+if [[ -z "${PICO_SDK_PATH:-}" ]]; then
+    printf "Error: Pico SDK not found.\n" >&2
+    exit 1
+fi
+
+# Derive Pico install root from PICO_SDK_PATH
+# Example: /Users/you/.pico-sdk/sdk/2.2.0 -> /Users/you/.pico-sdk
+PICO_SDK_ROOT="$(cd "$PICO_SDK_PATH/../.." && pwd)"
+printf "==> Derived Pico root: %s\n" "$PICO_SDK_ROOT"
+
+# Auto-detect Arm toolchain bin directory (if not set already)
+if [[ -z "${PICO_TOOLCHAIN_PATH:-}" ]]; then
+    for gcc_path in "$PICO_SDK_ROOT"/toolchain/*/bin/arm-none-eabi-gcc; do
+        if [[ -x "$gcc_path" ]]; then
+            export PICO_TOOLCHAIN_PATH="$(dirname "$gcc_path")"
+            printf "==> Auto-detected PICO_TOOLCHAIN_PATH: %s\n" "$PICO_TOOLCHAIN_PATH"
+            break
+        fi
+    done
+fi
+
+# Auto-detect Ninja binary (if not set already)
+if [[ -z "${CMAKE_MAKE_PROGRAM:-}" ]]; then
+    for ninja_path in "$PICO_SDK_ROOT"/ninja/*/ninja "$PICO_SDK_ROOT"/ninja/*/ninja.exe; do
+        if [[ -x "$ninja_path" ]]; then
+            export CMAKE_MAKE_PROGRAM="$ninja_path"
+            printf "==> Auto-detected Ninja: %s\n" "$CMAKE_MAKE_PROGRAM"
+            break
+        fi
+    done
+fi
+
+if [[ -z "${PICO_TOOLCHAIN_PATH:-}" ]]; then
+    printf "Error: arm-none-eabi-gcc not found under %s/toolchain\n" "$PICO_SDK_ROOT" >&2
+    exit 1
+fi
+
+if [[ -z "${CMAKE_MAKE_PROGRAM:-}" ]]; then
+    printf "Error: Ninja not found under %s/ninja\n" "$PICO_SDK_ROOT" >&2
+    exit 1
+fi
+
 printf "==> Configuring CMake...\n"
-cmake -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_MESSAGE_LOG_LEVEL=WARNING
+cmake -B "$BUILD_DIR" -G Ninja \
+    -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_MESSAGE_LOG_LEVEL=WARNING \
+    -DPICO_SDK_PATH="$PICO_SDK_PATH" \
+    -DPICO_TOOLCHAIN_PATH="$PICO_TOOLCHAIN_PATH" \
+    -DCMAKE_MAKE_PROGRAM="$CMAKE_MAKE_PROGRAM"
 
 if [[ -n "$NICE_TARGET" ]]; then
     printf "==> Compiling target %s...\n" "$CMAKE_TARGET"
