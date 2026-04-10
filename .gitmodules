@@ -1,0 +1,6 @@
+[submodule "external/leos-sdk"]
+	path = external/leos-sdk
+	url = https://github.com/VIP-LES/leos-sdk.git
+[submodule "external/leos-cyphal-types"]
+	path = external/leos-cyphal-types
+	url = https://github.com/VIP-LES/leos-cyphal-types.git
