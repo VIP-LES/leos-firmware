@@ -1,0 +1,104 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: ./compile [--target <name>] [--release|--debug] [--rebuild]
+
+Examples:
+    ./compile
+    ./compile --target sensor
+    ./compile --target radio --release
+    ./compile --rebuild
+
+Rules:
+    - If --target is not provided, build all targets.
+  - Default build mode is Debug.
+  - --release switches to Release mode.
+        - --rebuild removes the existing build directory before configuring.
+    - --target values are mapped to CMake targets.
+        Example: foo -> leos-foo-module
+EOF
+}
+
+map_target() {
+        local nice_name="$1"
+        echo "leos-${nice_name}-module"
+}
+
+NICE_TARGET=""
+BUILD_TYPE="Debug"
+REBUILD=0
+
+while (($#)); do
+    case "$1" in
+                --target)
+                        if (($# < 2)); then
+                                echo "Error: --target requires a value"
+                                usage
+                                exit 1
+                        fi
+                        NICE_TARGET="$2"
+                        shift 2
+                        ;;
+        --release)
+            BUILD_TYPE="Release"
+            shift
+            ;;
+        --debug)
+            BUILD_TYPE="Debug"
+            shift
+            ;;
+        --rebuild)
+            REBUILD=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --*)
+            echo "Error: unknown option '$1'"
+            usage
+            exit 1
+            ;;
+        *)
+            echo "Error: unknown argument '$1'"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+BUILD_DIR="build"
+printf "==> Updating Submodules\n"
+    git submodule update --init --recursive
+printf "==> Build mode: %s\n" "$BUILD_TYPE"
+printf "==> Build directory: %s\n" "$BUILD_DIR"
+if [[ -n "$NICE_TARGET" ]]; then
+    CMAKE_TARGET="$(map_target "$NICE_TARGET")"
+    printf "==> Building target: %s\n" "$CMAKE_TARGET"
+else
+    printf "==> Building target: all\n"
+fi
+
+if [[ "$REBUILD" -eq 1 ]]; then
+    printf "==> Rebuild requested: removing build directory...\n"
+    rm -rf "$BUILD_DIR"
+else
+    printf "==> Reusing existing build directory (use --rebuild for a clean build)...\n"
+fi
+mkdir -p "$BUILD_DIR"
+
+printf "==> Configuring CMake...\n"
+cmake -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_MESSAGE_LOG_LEVEL=WARNING
+
+if [[ -n "$NICE_TARGET" ]]; then
+    printf "==> Compiling target %s...\n" "$CMAKE_TARGET"
+    cmake --build "$BUILD_DIR" --parallel --target "$CMAKE_TARGET"
+else
+    printf "==> Compiling all targets...\n"
+    cmake --build "$BUILD_DIR" --parallel
+fi
+
+printf "==> Done.\n"
