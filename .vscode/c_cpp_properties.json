@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Pico",
+            "includePath": [
+                "/usr/share/pico-sdk/**",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
