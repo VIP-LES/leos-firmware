@@ -1,0 +1,84 @@
+name: Build Pico Fimware
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+
+env:
+  BUILD_TYPE: Release
+  PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # -------------------------
+    # Cache pico-sdk
+    # -------------------------
+    - name: Cache pico-sdk
+      uses: actions/cache@v4
+      with:
+        path: pico-sdk
+        key: pico-sdk
+
+    - name: Fetch pico-sdk (if not cached)
+      run: |
+        if [ ! -d pico-sdk ]; then
+          git clone https://github.com/raspberrypi/pico-sdk.git
+          cd pico-sdk
+          git submodule update --init --recursive
+        fi
+        
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          gcc-arm-none-eabi \
+          cmake \
+          ninja-build \
+          git
+
+    # -------------------------
+    # Cache build directory
+    # -------------------------
+    - name: Cache build
+      uses: actions/cache@v4
+      with:
+        path: build
+        key: build-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+
+    # -------------------------
+    # Configure
+    # -------------------------
+    - name: Configure
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          -DPICO_SDK_PATH=${PICO_SDK_PATH}
+
+    # -------------------------
+    # Build
+    # -------------------------
+    - name: Build
+      run: cmake --build build
+
+    # -------------------------
+    # Artifacts
+    # -------------------------
+    - name: Upload firmware (elf)
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware
+        path: build/**/*.elf
+        
+    - name: Upload firmware (uf2)
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware
+        path: build/**/*.uf2
