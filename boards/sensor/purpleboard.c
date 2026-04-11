@@ -37,7 +37,7 @@ static void publish_bme688(const leos_purpleboard_readings_t *readings, leos_cyp
     leos_sensors_BME688_0_1 message = {
         .valid = readings->bme680_valid,
         .humidity = readings->humidity,
-        .pressure._pascal = readings->pressure_mb * 100.0f,
+        .pressure.pascal = readings->pressure_mb * 100.0f,
         .temperature.kelvin = c_to_k(readings->temperature_c),
         .altitude.meter = readings->altitude_m,
         .gas_resistance = (float) readings->gas_resistance,
