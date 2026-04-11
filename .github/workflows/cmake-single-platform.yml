@@ -26,6 +26,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             gcc-arm-none-eabi \
             libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib \
             cmake \
             ninja-build \
             git \
