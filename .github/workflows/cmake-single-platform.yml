@@ -23,7 +23,8 @@ jobs:
           gcc-arm-none-eabi \
           cmake \
           ninja-build \
-          git
+          git \
+          python3
 
     - uses: actions/checkout@v4
 
