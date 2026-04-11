@@ -1,8 +1,8 @@
-name: Build Pico Fimware
+name: Build Pico Firmware
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
 
 env:
@@ -12,76 +12,111 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: debian:bookworm
+    container:
+      image: debian:bookworm
 
     steps:
-   
-    - name: Install dependencies
-      run: |
-        apt-get update
-        apt-get install -y \
-          gcc-arm-none-eabi \
-          cmake \
-          ninja-build \
-          git \
-          python3
+      # -------------------------
+      # Install system dependencies
+      # -------------------------
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            gcc-arm-none-eabi \
+            cmake \
+            ninja-build \
+            git \
+            python3 \
+            python3-venv \
+            python3-pip \
+            ca-certificates
+          rm -rf /var/lib/apt/lists/*
 
-    - uses: actions/checkout@v4
+      # -------------------------
+      # Checkout repo + submodules
+      # -------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    # -------------------------
-    # Cache pico-sdk
-    # -------------------------
-    - name: Cache pico-sdk
-      uses: actions/cache@v4
-      with:
-        path: pico-sdk
-        key: pico-sdk
+      # -------------------------
+      # Cache pico-sdk
+      # -------------------------
+      - name: Cache pico-sdk
+        uses: actions/cache@v4
+        with:
+          path: pico-sdk
+          key: pico-sdk-v1
 
-    - name: Fetch pico-sdk (if not cached)
-      run: |
-        if [ ! -d pico-sdk ]; then
-          git clone https://github.com/raspberrypi/pico-sdk.git
-          cd pico-sdk
+      # -------------------------
+      # Fetch pico-sdk (if needed)
+      # -------------------------
+      - name: Fetch pico-sdk
+        run: |
+          if [ ! -d "${PICO_SDK_PATH}" ]; then
+            git clone --depth=1 https://github.com/raspberrypi/pico-sdk.git "${PICO_SDK_PATH}"
+          fi
+
+          cd "${PICO_SDK_PATH}"
           git submodule update --init --recursive
-        fi
-        
-    
-    # -------------------------
-    # Cache build directory
-    # -------------------------
-    - name: Cache build
-      uses: actions/cache@v4
-      with:
-        path: build
-        key: build-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
 
-    # -------------------------
-    # Configure
-    # -------------------------
-    - name: Configure
-      run: |
-        cmake -B build \
-          -G Ninja \
-          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-          -DPICO_SDK_PATH=${PICO_SDK_PATH}
+      # -------------------------
+      # Cache Python deps
+      # -------------------------
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}
 
-    # -------------------------
-    # Build
-    # -------------------------
-    - name: Build
-      run: cmake --build build
+      # -------------------------
+      # Install Nunavut (nnvg)
+      # -------------------------
+      - name: Setup Python + Nunavut
+        run: |
+          python3 -m venv /opt/venv
+          . /opt/venv/bin/activate
 
-    # -------------------------
-    # Artifacts
-    # -------------------------
-    - name: Upload firmware (elf)
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware
-        path: build/**/*.elf
-        
-    - name: Upload firmware (uf2)
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware
-        path: build/**/*.uf2
+          pip install --upgrade pip
+          pip install nunavut
+
+          echo "/opt/venv/bin" >> $GITHUB_PATH
+
+      # -------------------------
+      # Cache build directory
+      # -------------------------
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: build-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+
+      # -------------------------
+      # Configure
+      # -------------------------
+      - name: Configure
+        run: |
+          cmake -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DPICO_SDK_PATH=${PICO_SDK_PATH}
+
+      # -------------------------
+      # Build
+      # -------------------------
+      - name: Build
+        run: cmake --build build --parallel
+
+      # -------------------------
+      # Upload artifacts
+      # -------------------------
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: |
+            build/**/*.elf
+            build/**/*.uf2
