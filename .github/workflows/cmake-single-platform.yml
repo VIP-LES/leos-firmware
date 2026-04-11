@@ -32,6 +32,7 @@ jobs:
             python3 \
             python3-venv \
             python3-pip \
+            picotool \
             ca-certificates
           rm -rf /var/lib/apt/lists/*
 
