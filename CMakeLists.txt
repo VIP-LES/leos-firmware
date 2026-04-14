@@ -22,3 +22,4 @@ include(helpers)
 
 add_subdirectory(boards)
 add_subdirectory(common)
+add_subdirectory(tools)

@@ -1,29 +1,30 @@
+add_custom_target(firmware)
+
 # LEOS Sensor
 file(GLOB SENSOR_SOURCES "${CMAKE_CURRENT_LIST_DIR}/sensor/*.c")
-add_executable(leos-sensor-module ${SENSOR_SOURCES})
+add_executable(leos-sensor ${SENSOR_SOURCES})
 
-target_link_libraries(leos-sensor-module
+target_link_libraries(leos-sensor
     leos_purpleboard
 )
 
-target_include_directories(leos-sensor-module PUBLIC
+target_include_directories(leos-sensor PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/sensor
 )
 
-leos_add_board(leos-sensor-module "LEOS Sensor" "2.1")
+leos_add_board(leos-sensor "LEOS Sensor" "2.1")
 
 
 # LEOS EFM
 file(GLOB EFM_SOURCES "${CMAKE_CURRENT_LIST_DIR}/efm/*.c")
-add_executable(leos-efm-module ${EFM_SOURCES})
+add_executable(leos-efm ${EFM_SOURCES})
 
-target_link_libraries(leos-efm-module
+target_link_libraries(leos-efm
     leos_mcp342x
 )
 
-target_include_directories(leos-efm-module PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/sensor
+target_include_directories(leos-efm PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/efm
 )
 
-leos_add_board(leos-efm-module "LEOS EFM" "1.0")
-
+leos_add_board(leos-efm "LEOS EFM" "1.0")
