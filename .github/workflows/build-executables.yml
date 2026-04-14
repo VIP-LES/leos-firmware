@@ -104,4 +104,4 @@ jobs:
           path: |
             build/firmware/
             !build/firmware/debug/
-          archive: false
+          archive: true
