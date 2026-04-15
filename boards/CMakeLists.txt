@@ -34,11 +34,18 @@ file(GLOB RADIO_SOURCES "${CMAKE_CURRENT_LIST_DIR}/radio/*.c")
 add_executable(leos-radio ${RADIO_SOURCES})
 
 target_link_libraries(leos-radio
+    hardware_spi
     leos_sx126x
 )
 
 target_include_directories(leos-radio PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/radio
+)
+
+# Change these variables to enable/disable radios in production
+target_compile_definitions(leos-radio PRIVATE
+    RADIO_900MHZ_ENABLE=1
+    RADIO_400MHZ_ENABLE=1
 )
 
 leos_add_board(leos-radio "LEOS Radio" "1.0")
