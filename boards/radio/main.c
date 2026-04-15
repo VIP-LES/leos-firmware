@@ -1,43 +1,12 @@
 #include "pico/stdlib.h"
-
 #include "config.h"
 #include "cyphal_bridge.h"
 #include "radio.h"
 #include "common/platform.h"
-#include "tethered_test.h"
-
 #include "canard.h"
-#include "leos/cyphal/node.h"
-#include "leos/mcp251xfd.h"
 
-int main(void) {
-
-#if !defined(LEOS_FAKE_TELEMETRY_MODE)
-#define LEOS_FAKE_TELEMETRY_MODE 0
-#endif
-
-#if !defined(LEOS_ENABLE_SX1268)
-#define LEOS_ENABLE_SX1268 1
-#endif
-
-#if LEOS_FAKE_TELEMETRY_MODE
-    const radio_init_options_t radio_options = {
-        .sx1262_enabled = true,
-        .sx1268_enabled = false,
-    };
-
-    const int rc = radio_init_with_options(&radio_options);
-    if (rc != 0)
-    {
-        while (true)
-        {
-            tight_loop_contents();
-        }
-    }
-
-    tethered_test_init();
-#else
-
+void main() {
+    
     // --- INITIALIZE MODULE ---
     board_health_t health = BOARD_HEALTH_NOMINAL;
 
@@ -47,9 +16,11 @@ int main(void) {
     }
 
 
-
-  
-
+    if (!radio_init()) {
+        LOG_ERROR("Failed to initialize configured radios. This node will now panic.");
+        leos_fatal();
+    }
+    
     /* Register Cyphal subscriptions. All callback bodies live in
      * cyphal_bridge.c — main.c is the single place where the
      * application's message-level behavior is visible. */
@@ -71,7 +42,6 @@ int main(void) {
         /* LOG_ERROR("Failed to subscribe sensor_gps: %d", sub_rc); */
     }
 
-#if LEOS_ENABLE_SX1268
     sub_rc = leos_cyphal_subscribe(
         &leos_node,
         CanardTransferKindMessage,
@@ -84,27 +54,16 @@ int main(void) {
     {
         /* LOG_ERROR("Failed to subscribe efm: %d", sub_rc); */
     }
-#endif
-#endif
 
     leos_board_finish_setup(health);
-
-    /* Main loop — keep this simple and fast. */
+    LOG_INFO("Entering main loop...");
     while (true) {
-#if LEOS_FAKE_TELEMETRY_MODE
+        leos_net_task();
         radio_service_irqs();
-        tethered_test_service();
-#else
-    leos_net_task();
-    radio_service_irqs();
 
-        if (radio_sx1262_packet_available())
-        {
+        if (radio_sx1262_packet_available()) {
             cyphal_bridge_publish_sx1262_rx(&leos_node);
         }
-#endif
 
     }
-
-    return 0;
 }

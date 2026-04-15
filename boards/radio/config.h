@@ -2,12 +2,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "leos/mcp251xfd/config.h"
+#include "hardware/spi.h"
 #include "leos/sx126x.h"
-
-extern leos_mcp251xfd_hw_t can_hw_config;
-extern leos_mcp251xfd_config_t can_config;
 
 /* Cyphal subject IDs/extents. Keep these aligned with the generated DSDL. */
 #define CYPHAL_SUB_SENSOR_GPS_ID 1500
