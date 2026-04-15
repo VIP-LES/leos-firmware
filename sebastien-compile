@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: ./compile [--target <name>] [--release|--debug] [--rebuild]
+
+Examples:
+    ./compile
+    ./compile --target sensor
+    ./compile --target radio --release
+    ./compile --rebuild
+
+Rules:
+    - If --target is not provided, build all targets.
+  - Default build mode is Debug.
+  - --release switches to Release mode.
+        - --rebuild removes the existing build directory before configuring.
+    - --target values are mapped to CMake targets.
+        Example: foo -> leos-foo
+EOF
+}
+
+map_target() {
+        local nice_name="$1"
+        echo "leos-${nice_name}"
+}
+
+NICE_TARGET=""
+BUILD_TYPE="Debug"
+REBUILD=0
+
+while (($#)); do
+    case "$1" in
+                --target)
+                        if (($# < 2)); then
+                                echo "Error: --target requires a value"
+                                usage
+                                exit 1
+                        fi
+                        NICE_TARGET="$2"
+                        shift 2
+                        ;;
+        --release)
+            BUILD_TYPE="Release"
+            shift
+            ;;
+        --debug)
+            BUILD_TYPE="Debug"
+            shift
+            ;;
+        --rebuild)
+            REBUILD=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --*)
+            echo "Error: unknown option '$1'"
+            usage
+            exit 1
+            ;;
+        *)
+            echo "Error: unknown argument '$1'"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+BUILD_DIR="build"
+printf "==> Updating Submodules\n"
+    git submodule update --init --recursive
+printf "==> Build mode: %s\n" "$BUILD_TYPE"
+printf "==> Build directory: %s\n" "$BUILD_DIR"
+if [[ -n "$NICE_TARGET" ]]; then
+    CMAKE_TARGET="$(map_target "$NICE_TARGET")"
+    printf "==> Building target: %s\n" "$CMAKE_TARGET"
+else
+    printf "==> Building target: all\n"
+fi
+
+if [[ "$REBUILD" -eq 1 ]]; then
+    printf "==> Rebuild requested: removing build directory...\n"
+    rm -rf "$BUILD_DIR"
+else
+    printf "==> Reusing existing build directory (use --rebuild for a clean build)...\n"
+fi
+mkdir -p "$BUILD_DIR"
+
+# Auto-detect Pico SDK (if not set already)
+if [[ -z "${PICO_SDK_PATH:-}" ]]; then
+    for d in "$HOME"/.pico-sdk/sdk/*; do
+        if [[ -f "$d/pico_sdk_init.cmake" ]]; then
+            export PICO_SDK_PATH="$d"
+            printf "==> Auto-detected PICO_SDK_PATH: %s\n" "$PICO_SDK_PATH"
+            break
+        fi
+    done
+fi
+
+if [[ -z "${PICO_SDK_PATH:-}" ]]; then
+    printf "Error: Pico SDK not found.\n" >&2
+    exit 1
+fi
+
+# Derive Pico install root from PICO_SDK_PATH
+# Example: /Users/you/.pico-sdk/sdk/2.2.0 -> /Users/you/.pico-sdk
+PICO_SDK_ROOT="$(cd "$PICO_SDK_PATH/../.." && pwd)"
+printf "==> Derived Pico root: %s\n" "$PICO_SDK_ROOT"
+
+# Auto-detect Arm toolchain bin directory (if not set already)
+if [[ -z "${PICO_TOOLCHAIN_PATH:-}" ]]; then
+    for gcc_path in "$PICO_SDK_ROOT"/toolchain/*/bin/arm-none-eabi-gcc; do
+        if [[ -x "$gcc_path" ]]; then
+            export PICO_TOOLCHAIN_PATH="$(dirname "$gcc_path")"
+            printf "==> Auto-detected PICO_TOOLCHAIN_PATH: %s\n" "$PICO_TOOLCHAIN_PATH"
+            break
+        fi
+    done
+fi
+
+# Auto-detect Ninja binary (if not set already)
+if [[ -z "${CMAKE_MAKE_PROGRAM:-}" ]]; then
+    for ninja_path in "$PICO_SDK_ROOT"/ninja/*/ninja "$PICO_SDK_ROOT"/ninja/*/ninja.exe; do
+        if [[ -x "$ninja_path" ]]; then
+            export CMAKE_MAKE_PROGRAM="$ninja_path"
+            printf "==> Auto-detected Ninja: %s\n" "$CMAKE_MAKE_PROGRAM"
+            break
+        fi
+    done
+fi
+
+if [[ -z "${PICO_TOOLCHAIN_PATH:-}" ]]; then
+    printf "Error: arm-none-eabi-gcc not found under %s/toolchain\n" "$PICO_SDK_ROOT" >&2
+    exit 1
+fi
+
+if [[ -z "${CMAKE_MAKE_PROGRAM:-}" ]]; then
+    printf "Error: Ninja not found under %s/ninja\n" "$PICO_SDK_ROOT" >&2
+    exit 1
+fi
+
+printf "==> Configuring CMake...\n"
+cmake -B "$BUILD_DIR" -G Ninja \
+    -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_MESSAGE_LOG_LEVEL=WARNING \
+    -DPICO_SDK_PATH="$PICO_SDK_PATH" \
+    -DPICO_TOOLCHAIN_PATH="$PICO_TOOLCHAIN_PATH" \
+    -DCMAKE_MAKE_PROGRAM="$CMAKE_MAKE_PROGRAM"
+
+if [[ -n "$NICE_TARGET" ]]; then
+    printf "==> Compiling target %s...\n" "$CMAKE_TARGET"
+    cmake --build "$BUILD_DIR" --parallel --target "$CMAKE_TARGET"
+else
+    printf "==> Compiling all targets...\n"
+    cmake --build "$BUILD_DIR" --parallel
+fi
+
+printf "==> Done.\n"
