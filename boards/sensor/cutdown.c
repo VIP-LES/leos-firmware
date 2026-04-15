@@ -1,7 +1,8 @@
 #include "common/platform.h"
 #include "cutdown.h"
 #include "pico/stdlib.h"
-#include <leos/service/Cutdown_0_1.h>
+#include <leos/cutdown/Cutdown_0_2.h>
+#include <leos/cutdown/CutdownStatus_0_1.h>
 
 static bool start_cutdown = false;
 
@@ -10,23 +11,21 @@ static bool cutdown_running = false;
 static absolute_time_t cutdown_timeout = 0;
 #define CUTDOWN_DURATION_MS 3000ul
 
-void onCutdownRequest(struct CanardRxTransfer *transfer, void* ref) {
-    (void) ref;
-    start_cutdown = true;
-
-    static CanardTransferID tid = 0;
-    leos_service_Cutdown_Response_0_1 res = {
-        .status = leos_service_Cutdown_Response_0_1_STATUS_IN_PROGRESS
+int send_response(uint8_t status, struct CanardRxTransfer *transfer) {
+    leos_cutdown_Cutdown_Response_0_2 response = {
+        .status = status
     };
-    uint8_t buffer[leos_service_Cutdown_Response_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
-    size_t size = leos_service_Cutdown_Response_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
-    if (leos_service_Cutdown_Response_0_1_serialize_(&res, buffer, &size) < 0) {
-        LOG_DEBUG("Failed to serialize cutdown response");
+    uint8_t buffer[leos_cutdown_Cutdown_Response_0_2_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    size_t size = sizeof(buffer);
+    if (leos_cutdown_Cutdown_Response_0_2_serialize_(&response, buffer, &size) < 0) {
+        LOG_WARNING("Failed to serialize cutdown response");
+        return -1;
     }
+
     const struct CanardTransferMetadata md = {
-        .port_id = leos_service_Cutdown_0_1_FIXED_PORT_ID_,
+        .port_id = leos_cutdown_Cutdown_0_2_FIXED_PORT_ID_,
         .priority = CanardPriorityNominal,
-        .transfer_id = tid++,
+        .transfer_id = transfer->metadata.transfer_id,
         .transfer_kind = CanardTransferKindResponse,
         .remote_node_id = transfer->metadata.remote_node_id
     };
@@ -35,12 +34,58 @@ void onCutdownRequest(struct CanardRxTransfer *transfer, void* ref) {
         .size = size
     };
     if (leos_cyphal_push(&leos_node, &md, p) != LEOS_CYPHAL_OK) {
-        LOG_DEBUG("Failed to push cutdown response");
+        LOG_WARNING("Failed to push cutdown response");
+        return -1;
     }
+    return 0;
+}
+
+int publish_status(uint8_t status) {
+    static CanardTransferID tid = 0;
+
+    leos_cutdown_CutdownStatus_0_1 msg = {
+        .status = status
+    };
+
+    uint8_t buffer[leos_cutdown_CutdownStatus_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    size_t size = sizeof(buffer);
+    if (leos_cutdown_CutdownStatus_0_1_serialize_(&msg, buffer, &size) < 0) {
+        LOG_WARNING("Failed to serialize cutdown status message");
+        return -1;
+    }
+
+    const struct CanardTransferMetadata md = {
+        .port_id = leos_cutdown_CutdownStatus_0_1_FIXED_PORT_ID_,
+        .priority = CanardPriorityNominal,
+        .transfer_id = tid++,
+        .transfer_kind = CanardTransferKindMessage,
+        .remote_node_id = CANARD_NODE_ID_UNSET
+    };
+    const struct CanardPayload p = {
+        .data = buffer,
+        .size = size
+    };
+    if (leos_cyphal_push(&leos_node, &md, p) != LEOS_CYPHAL_OK) {
+        LOG_WARNING("Failed to push cutdown status message");
+        return -1;
+    }
+    return 0;
+}
+
+void onCutdownRequest(struct CanardRxTransfer *transfer, void* ref) {
+    (void) ref;
+
+    uint8_t status;
+    if (cutdown_running || start_cutdown) {
+        status = leos_cutdown_Cutdown_Response_0_2_STATUS_ALREADY_IN_PROGRESS;
+    } else {
+        status = leos_cutdown_Cutdown_Response_0_2_STATUS_ACCEPTED;
+        start_cutdown = true;
+    }
+    send_response(status, transfer);
 }
 
 void cutdown_init() {
-    if (!&leos_node) return;
     gpio_init(R1);
     gpio_init(R2);
     gpio_init(R3);
@@ -53,12 +98,15 @@ void cutdown_init() {
     LOG_DEBUG("Subscribing to cutdown requests");
     leos_cyphal_subscribe(
         &leos_node, 
-        CanardTransferKindResponse, 
-        leos_service_Cutdown_0_1_FIXED_PORT_ID_, 
-        leos_service_Cutdown_Request_0_1_EXTENT_BYTES_, 
+        CanardTransferKindRequest, 
+        leos_cutdown_Cutdown_0_2_FIXED_PORT_ID_, 
+        leos_cutdown_Cutdown_Request_0_2_EXTENT_BYTES_, 
         onCutdownRequest, 
-        &leos_node
+        NULL
     );
+    
+    // Send idle message at startup
+    publish_status(leos_cutdown_CutdownStatus_0_1_STATUS_IDLE);
 }
 
 void cutdown_start() {
@@ -80,6 +128,8 @@ void cutdown_task() {
 
         // set timeout to disable relays
         cutdown_timeout = make_timeout_time_ms(CUTDOWN_DURATION_MS);
+
+        publish_status(leos_cutdown_CutdownStatus_0_1_STATUS_IN_PROGRESS);
     }
 
     if (!cutdown_running) return;
@@ -87,7 +137,7 @@ void cutdown_task() {
     absolute_time_t now = get_absolute_time();
 
     // If current index duration elapsed, move to next
-    if (now > cutdown_timeout) {
+    if (absolute_time_diff_us(now, cutdown_timeout) <= 0) {
 
         // Turn off relays
         gpio_put(R1, 0);
@@ -97,6 +147,11 @@ void cutdown_task() {
 
         // finished
         cutdown_running = false;
+
+        // Send FINISHED and IDLE messages
+        publish_status(leos_cutdown_CutdownStatus_0_1_STATUS_FINISHED);
+        publish_status(leos_cutdown_CutdownStatus_0_1_STATUS_IDLE);
+
         LOG_DEBUG("Cutdown sequence complete");
     }
 }
