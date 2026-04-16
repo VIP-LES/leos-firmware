@@ -10,6 +10,10 @@
 extern leos_mcp251xfd_hw_t can_hw_config;
 extern leos_mcp251xfd_config_t can_config;
 
+#ifndef PLATFORM_NEEDS_IRQ
+    #define PLATFORM_NEEDS_IRQ 0
+#endif
+
 MCP251XFD leos_can;
 leos_cyphal_node_t leos_node;
 
@@ -23,7 +27,7 @@ int leos_board_init() {
 
     // Setup CANBus Communication
     eERRORRESULT err;
-    err = leos_mcp251xfd_init(&leos_can, &can_hw_config, &can_config, true);
+    err = leos_mcp251xfd_init(&leos_can, &can_hw_config, &can_config, !PLATFORM_NEEDS_IRQ);
     if (err != ERR_OK) {
         LOG_ERROR("Failed to init MCP251XFD: %s", mcp251xfd_debug_error_reason(err));
         return -1;
