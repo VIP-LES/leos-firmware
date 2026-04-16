@@ -1,6 +1,7 @@
 #include "radio.h"
 #include "config.h"
 #include "leos/log.h"
+#include "hardware/gpio.h"
 
 int radio_init() {
     leos_radio_hw_config_t sx1262_hw_cfg;
@@ -12,6 +13,39 @@ int radio_init() {
     config_build_sx1268_hw(&sx1268_hw_cfg);
     config_build_sx1262(&sx1262_cfg);
     config_build_sx1268(&sx1268_cfg);
+
+    LOG_INFO("Radio init config: sx1262 dio1=%u busy=%u nss=%u reset=%u freq=%lu tx_timeout_ms=%lu bw=%d sf=%d cr=%d sync=0x%04x",
+             (unsigned)sx1262_hw_cfg.pin_dio1,
+             (unsigned)sx1262_hw_cfg.pin_busy,
+             (unsigned)sx1262_hw_cfg.pin_nss,
+             (unsigned)sx1262_hw_cfg.pin_reset,
+             (unsigned long)sx1262_cfg.rf_frequency_hz,
+             (unsigned long)sx1262_cfg.tx_timeout_ms,
+             (int)sx1262_cfg.bandwidth,
+             (int)sx1262_cfg.spreading_factor,
+             (int)sx1262_cfg.coding_rate,
+             (unsigned)sx1262_cfg.sync_word);
+    LOG_INFO("Radio aux config: sx1262 dio2_rf_switch=%d dio3_tcxo=%d tcxo_voltage=%d tcxo_delay_us=%lu",
+             sx1262_cfg.dio2_rf_switch_enable ? 1 : 0,
+             sx1262_cfg.dio3_tcxo_enable ? 1 : 0,
+             (int)sx1262_cfg.tcxo_voltage,
+             (unsigned long)sx1262_cfg.tcxo_delay_us);
+    LOG_INFO("Radio init config: sx1268 dio1=%u busy=%u nss=%u reset=%u freq=%lu tx_timeout_ms=%lu bw=%d sf=%d cr=%d sync=0x%04x",
+             (unsigned)sx1268_hw_cfg.pin_dio1,
+             (unsigned)sx1268_hw_cfg.pin_busy,
+             (unsigned)sx1268_hw_cfg.pin_nss,
+             (unsigned)sx1268_hw_cfg.pin_reset,
+             (unsigned long)sx1268_cfg.rf_frequency_hz,
+             (unsigned long)sx1268_cfg.tx_timeout_ms,
+             (int)sx1268_cfg.bandwidth,
+             (int)sx1268_cfg.spreading_factor,
+             (int)sx1268_cfg.coding_rate,
+             (unsigned)sx1268_cfg.sync_word);
+    LOG_INFO("Radio aux config: sx1268 dio2_rf_switch=%d dio3_tcxo=%d tcxo_voltage=%d tcxo_delay_us=%lu",
+             sx1268_cfg.dio2_rf_switch_enable ? 1 : 0,
+             sx1268_cfg.dio3_tcxo_enable ? 1 : 0,
+             (int)sx1268_cfg.tcxo_voltage,
+             (unsigned long)sx1268_cfg.tcxo_delay_us);
 
     leos_radio_status_t err = LEOS_RADIO_OK;
     if (RADIO_900MHZ_ENABLE) {
@@ -35,10 +69,12 @@ int radio_init() {
 }
 
 void radio_handle_dio1_irq_sx1262() {
+    LOG_TRACE("radio_handle_dio1_irq_sx1262 level=%u", (unsigned)gpio_get(LEOS_SX1262_PIN_DIO1));
     leos_sx126x_handle_dio1_irq(LEOS_RADIO_SX1262);
 }
 
 void radio_handle_dio1_irq_sx1268() {
+    LOG_TRACE("radio_handle_dio1_irq_sx1268 level=%u", (unsigned)gpio_get(LEOS_SX1268_PIN_DIO1));
     leos_sx126x_handle_dio1_irq(LEOS_RADIO_SX1268);
 }
 

@@ -7,12 +7,19 @@
 #include "hardware/irq.h"
 
 void irq_cb(uint gpio, uint32_t event_mask) {
+    LOG_TRACE("radio irq_cb gpio=%u events=0x%08lx", (unsigned)gpio, (unsigned long)event_mask);
+
     switch (gpio) {
         case LEOS_SX1262_PIN_DIO1:
+            LOG_TRACE("radio irq_cb routing SX1262 DIO1");
             radio_handle_dio1_irq_sx1262();
             break;
         case LEOS_SX1268_PIN_DIO1:
+            LOG_TRACE("radio irq_cb routing SX1268 DIO1");
             radio_handle_dio1_irq_sx1268();
+            break;
+        default:
+            LOG_TRACE("radio irq_cb forwarding non-radio gpio=%u", (unsigned)gpio);
             break;
     }
 
@@ -34,10 +41,23 @@ void main() {
         LOG_ERROR("Failed to initialize configured radios. This node will now panic.");
         leos_fatal();
     }
-    
+
+    LOG_INFO("Installing shared GPIO IRQ callback for radio board");
     gpio_set_irq_callback(irq_cb);
+
+    LOG_INFO("Enabling DIO1 IRQs: sx1262 gpio=%u level=%u, sx1268 gpio=%u level=%u",
+             (unsigned)LEOS_SX1262_PIN_DIO1,
+             (unsigned)gpio_get(LEOS_SX1262_PIN_DIO1),
+             (unsigned)LEOS_SX1268_PIN_DIO1,
+             (unsigned)gpio_get(LEOS_SX1268_PIN_DIO1));
     gpio_set_irq_enabled(LEOS_SX1262_PIN_DIO1, GPIO_IRQ_EDGE_RISE, true);
     gpio_set_irq_enabled(LEOS_SX1268_PIN_DIO1, GPIO_IRQ_EDGE_RISE, true);
+
+    LOG_INFO("DIO1 IRQs armed: sx1262 gpio=%u level=%u, sx1268 gpio=%u level=%u",
+             (unsigned)LEOS_SX1262_PIN_DIO1,
+             (unsigned)gpio_get(LEOS_SX1262_PIN_DIO1),
+             (unsigned)LEOS_SX1268_PIN_DIO1,
+             (unsigned)gpio_get(LEOS_SX1268_PIN_DIO1));
       
 
     /* Register Cyphal subscriptions. All callback bodies live in
