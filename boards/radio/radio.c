@@ -13,16 +13,19 @@ int radio_init() {
     config_build_sx1262(&sx1262_cfg);
     config_build_sx1268(&sx1268_cfg);
 
+    leos_radio_status_t err = LEOS_RADIO_OK;
     if (RADIO_900MHZ_ENABLE) {
-        if (!leos_sx126x_init(LEOS_RADIO_SX1262, &sx1262_hw_cfg, &sx1262_cfg)) {
-            LOG_ERROR("SX1262 900MHz radio init failed");
+        err = leos_sx126x_init(LEOS_RADIO_SX1262, &sx1262_hw_cfg, &sx1262_cfg);
+        if (err != LEOS_RADIO_OK) {
+            LOG_ERROR("SX1262 900MHz radio init failed. Error code: %d", err);
             return -1;
         }
     }
 
     if (RADIO_400MHZ_ENABLE) {
-        if (!leos_sx126x_init(LEOS_RADIO_SX1268, &sx1268_hw_cfg, &sx1268_cfg)) {
-            LOG_ERROR("SX1268 400MHz radio init failed");
+        err = leos_sx126x_init(LEOS_RADIO_SX1268, &sx1268_hw_cfg, &sx1268_cfg);
+        if (err != LEOS_RADIO_OK) {
+            LOG_ERROR("SX1268 400MHz radio init failed. Error code: %d", err);
             return -2;
         }
     }

@@ -227,7 +227,7 @@ void cyphal_bridge_on_efm(
 
     /* Step 4: Transmit over SX1268. */
     int rc = radio_send_sx1268(buf, packed_len);
-    if (rc != 0)
+    if (rc != LEOS_RADIO_OK)
     {
         LOG_ERROR("radio_send_sx1268 failed: %d", rc);
     }

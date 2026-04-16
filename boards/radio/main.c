@@ -30,7 +30,7 @@ void main() {
     }
 
 
-    if (!radio_init()) {
+    if (radio_init() < 0) {
         LOG_ERROR("Failed to initialize configured radios. This node will now panic.");
         leos_fatal();
     }
