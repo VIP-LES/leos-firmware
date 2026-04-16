@@ -4,6 +4,20 @@
 #include "radio.h"
 #include "common/platform.h"
 #include "canard.h"
+#include "hardware/irq.h"
+
+void irq_cb(uint gpio, uint32_t event_mask) {
+    switch (gpio) {
+        case LEOS_SX1262_PIN_DIO1:
+            radio_handle_dio1_irq_sx1262();
+            break;
+        case LEOS_SX1268_PIN_DIO1:
+            radio_handle_dio1_irq_sx1268();
+            break;
+    }
+
+    leos_mcp251xfd_irq_handler(gpio, event_mask);
+}
 
 void main() {
     
@@ -21,6 +35,11 @@ void main() {
         leos_fatal();
     }
     
+    gpio_set_irq_callback(irq_cb);
+    gpio_set_irq_enabled(LEOS_SX1262_PIN_DIO1, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_irq_enabled(LEOS_SX1268_PIN_DIO1, GPIO_IRQ_EDGE_RISE, true);
+      
+
     /* Register Cyphal subscriptions. All callback bodies live in
      * cyphal_bridge.c — main.c is the single place where the
      * application's message-level behavior is visible. */

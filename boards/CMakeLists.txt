@@ -46,6 +46,7 @@ target_include_directories(leos-radio PUBLIC
 target_compile_definitions(leos-radio PRIVATE
     RADIO_900MHZ_ENABLE=1
     RADIO_400MHZ_ENABLE=1
+    PLATFORM_NEEDS_IRQ=1
 )
 
 leos_add_board(leos-radio "LEOS Radio" "1.0")
