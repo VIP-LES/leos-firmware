@@ -7,19 +7,14 @@
 #include "hardware/irq.h"
 
 void irq_cb(uint gpio, uint32_t event_mask) {
-    LOG_TRACE("radio irq_cb gpio=%u events=0x%08lx", (unsigned)gpio, (unsigned long)event_mask);
-
     switch (gpio) {
         case LEOS_SX1262_PIN_DIO1:
-            LOG_TRACE("radio irq_cb routing SX1262 DIO1");
             radio_handle_dio1_irq_sx1262();
             break;
         case LEOS_SX1268_PIN_DIO1:
-            LOG_TRACE("radio irq_cb routing SX1268 DIO1");
             radio_handle_dio1_irq_sx1268();
             break;
         default:
-            LOG_TRACE("radio irq_cb forwarding non-radio gpio=%u", (unsigned)gpio);
             break;
     }
 
@@ -27,7 +22,7 @@ void irq_cb(uint gpio, uint32_t event_mask) {
 }
 
 void main() {
-    
+
     // --- INITIALIZE MODULE ---
     board_health_t health = BOARD_HEALTH_NOMINAL;
 
@@ -35,7 +30,6 @@ void main() {
         LOG_ERROR("A critical communications error has occured. This node is offline.");
         leos_fatal();
     }
-
 
     if (radio_init() < 0) {
         LOG_ERROR("Failed to initialize configured radios. This node will now panic.");
@@ -97,8 +91,8 @@ void main() {
     leos_board_finish_setup(health);
     LOG_INFO("Entering main loop...");
     while (true) {
-        leos_net_task();
         radio_service_irqs();
+        leos_net_task();
 
         if (radio_sx1262_packet_available()) {
             cyphal_bridge_publish_sx1262_rx(&leos_node);

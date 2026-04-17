@@ -69,12 +69,10 @@ int radio_init() {
 }
 
 void radio_handle_dio1_irq_sx1262() {
-    LOG_TRACE("radio_handle_dio1_irq_sx1262 level=%u", (unsigned)gpio_get(LEOS_SX1262_PIN_DIO1));
     leos_sx126x_handle_dio1_irq(LEOS_RADIO_SX1262);
 }
 
 void radio_handle_dio1_irq_sx1268() {
-    LOG_TRACE("radio_handle_dio1_irq_sx1268 level=%u", (unsigned)gpio_get(LEOS_SX1268_PIN_DIO1));
     leos_sx126x_handle_dio1_irq(LEOS_RADIO_SX1268);
 }
 
