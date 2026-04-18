@@ -5,10 +5,10 @@
 
 int radio_init();
 
-void radio_service_irqs();
+void radio_poll();
 
-int radio_send_sx1262(const uint8_t *buf, size_t len);
-int radio_send_sx1268(const uint8_t *buf, size_t len);
+int radio_start_send_sx1262(const uint8_t *buf, size_t len);
+int radio_start_send_sx1268(const uint8_t *buf, size_t len);
 
 void radio_handle_dio1_irq_sx1262();
 void radio_handle_dio1_irq_sx1268();

@@ -169,10 +169,14 @@ void cyphal_bridge_on_sensor_gps(
     }
 
     /* Step 4: Transmit over SX1262. */
-    int rc = radio_send_sx1262(buf, packed_len);
-    if (rc != 0)
+    int rc = radio_start_send_sx1262(buf, packed_len);
+    if (rc == LEOS_RADIO_ERR_BUSY)
     {
-        LOG_ERROR("radio_send_sx1262 failed: %d", rc);
+        LOG_TRACE("dropping sx1262 TX while prior TX is still in flight");
+    }
+    else if (rc != 0)
+    {
+        LOG_ERROR("radio_start_send_sx1262 failed: %d", rc);
     }
 }
 
@@ -222,10 +226,14 @@ void cyphal_bridge_on_efm(
     }
 
     /* Step 4: Transmit over SX1268. */
-    int rc = radio_send_sx1268(buf, packed_len);
-    if (rc != LEOS_RADIO_OK)
+    int rc = radio_start_send_sx1268(buf, packed_len);
+    if (rc == LEOS_RADIO_ERR_BUSY)
     {
-        LOG_ERROR("radio_send_sx1268 failed: %d", rc);
+        LOG_TRACE("dropping sx1268 TX while prior TX is still in flight");
+    }
+    else if (rc != LEOS_RADIO_OK)
+    {
+        LOG_ERROR("radio_start_send_sx1268 failed: %d", rc);
     }
 }
 

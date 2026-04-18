@@ -3,6 +3,33 @@
 #include "leos/log.h"
 #include "hardware/gpio.h"
 
+static bool g_sx1262_restart_rx_after_tx = false;
+static bool g_sx1268_restart_rx_after_tx = false;
+
+static void radio_poll_one(leos_radio_t radio, bool *restart_rx_after_tx) {
+    const bool was_tx_in_flight = leos_sx126x_tx_in_flight(radio);
+    const leos_radio_status_t poll_status = leos_sx126x_poll(radio);
+
+    if (poll_status != LEOS_RADIO_OK) {
+        LOG_ERROR("leos_sx126x_poll failed radio=%d status=%d", (int)radio, (int)poll_status);
+        *restart_rx_after_tx = false;
+        return;
+    }
+
+    if (!was_tx_in_flight || leos_sx126x_tx_in_flight(radio)) {
+        return;
+    }
+
+    if (*restart_rx_after_tx && (leos_sx126x_last_tx_status(radio) == LEOS_RADIO_OK)) {
+        const leos_radio_status_t rx_status = leos_sx126x_start_rx(radio);
+        if (rx_status != LEOS_RADIO_OK) {
+            LOG_ERROR("leos_sx126x_start_rx failed radio=%d status=%d", (int)radio, (int)rx_status);
+        }
+    }
+
+    *restart_rx_after_tx = false;
+}
+
 int radio_init() {
     leos_radio_hw_config_t sx1262_hw_cfg;
     leos_radio_hw_config_t sx1268_hw_cfg;
@@ -76,27 +103,41 @@ void radio_handle_dio1_irq_sx1268() {
     leos_sx126x_handle_dio1_irq(LEOS_RADIO_SX1268);
 }
 
-void radio_service_irqs() {
+void radio_poll() {
     if (RADIO_900MHZ_ENABLE) {
-        leos_sx126x_process_irq(LEOS_RADIO_SX1262);
+        radio_poll_one(LEOS_RADIO_SX1262, &g_sx1262_restart_rx_after_tx);
     }
     if (RADIO_400MHZ_ENABLE) {
-        leos_sx126x_process_irq(LEOS_RADIO_SX1268);
+        radio_poll_one(LEOS_RADIO_SX1268, &g_sx1268_restart_rx_after_tx);
     }
 }
 
-int radio_send_sx1262(const uint8_t *buf, size_t len) {
+int radio_start_send_sx1262(const uint8_t *buf, size_t len) {
     // Pretend like radio is successfully transmitting
     if (!RADIO_900MHZ_ENABLE) return 0;
 
-    return leos_sx126x_send(LEOS_RADIO_SX1262, buf, len);
+    const leos_radio_mode_t previous_mode = leos_sx126x_mode(LEOS_RADIO_SX1262);
+    const leos_radio_status_t status = leos_sx126x_start_tx(LEOS_RADIO_SX1262, buf, len);
+
+    if (status == LEOS_RADIO_OK) {
+        g_sx1262_restart_rx_after_tx = (previous_mode == LEOS_RADIO_MODE_RX);
+    }
+
+    return status;
 }
 
-int radio_send_sx1268(const uint8_t *buf, size_t len) {
+int radio_start_send_sx1268(const uint8_t *buf, size_t len) {
     // Pretend like radio is successfully transmitting
     if (!RADIO_400MHZ_ENABLE) return 0;
 
-    return leos_sx126x_send(LEOS_RADIO_SX1268, buf, len);
+    const leos_radio_mode_t previous_mode = leos_sx126x_mode(LEOS_RADIO_SX1268);
+    const leos_radio_status_t status = leos_sx126x_start_tx(LEOS_RADIO_SX1268, buf, len);
+
+    if (status == LEOS_RADIO_OK) {
+        g_sx1268_restart_rx_after_tx = (previous_mode == LEOS_RADIO_MODE_RX);
+    }
+
+    return status;
 }
 
 bool radio_sx1262_packet_available() {
