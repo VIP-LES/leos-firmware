@@ -1,6 +1,6 @@
 
 #include "leos/mcp342x.h"
-#include "leos/efm/ADC_0_1.h"
+#include "leos/efm/ADC_0_2.h"
 #include "leos/cyphal/node.h"
 #include "common/platform.h"
 
@@ -12,11 +12,11 @@ static void set_cyphal_string(uavcan_primitive_String_1_0* string, const char* v
 }
 
 void efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2) {
-    int32_t val1, val2;
+    static const int efm_channels[] = {0, 3};
+    leos_efm_ADC_0_2 message = {0};
 
-    leos_efm_ADC_0_1 message;
-
-    for (int ch = 0; ch < 4; ch++) {
+    for (size_t i = 0; i < sizeof(efm_channels) / sizeof(efm_channels[0]); i++) {
+        const int ch = efm_channels[i];
         mcp342x_channel_t channel = (mcp342x_channel_t)ch;
 
         float voltage1;
@@ -43,17 +43,10 @@ void efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2) {
                 message.adc1_ch1_diff = voltage1;
                 message.adc2_ch1_diff = voltage2;
                 break;
-            case 1:
-                message.adc1_ch2_sensing = voltage1;
-                message.adc2_ch2_sensing = voltage2;
-                break;
-            case 2:
-                message.adc1_ch3_reference = voltage1;
-                message.adc2_ch3_reference = voltage2;
-                break;
             case 3:
                 message.adc1_ch4_breakbeam = voltage1;
                 message.adc2_ch4_breakbeam = voltage2;
+                break;
         }
     }
 
@@ -62,15 +55,15 @@ void efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2) {
 
     // Send cyphal message with these collected ADC values
     static CanardTransferID transfer_id = 0;
-    uint8_t buffer[leos_efm_ADC_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
+    uint8_t buffer[leos_efm_ADC_0_2_SERIALIZATION_BUFFER_SIZE_BYTES_];
     size_t size = sizeof(buffer);
-    if (leos_efm_ADC_0_1_serialize_(&message, buffer, &size) != 0) {
+    if (leos_efm_ADC_0_2_serialize_(&message, buffer, &size) != 0) {
         LOG_WARNING("Failed to serialize EFM ADC message");
         return;
     }
 
     const struct CanardTransferMetadata md = {
-        .port_id = leos_efm_ADC_0_1_FIXED_PORT_ID_,
+        .port_id = leos_efm_ADC_0_2_FIXED_PORT_ID_,
         .priority = CanardPriorityLow,
         .remote_node_id = CANARD_NODE_ID_UNSET,
         .transfer_id = transfer_id++,
