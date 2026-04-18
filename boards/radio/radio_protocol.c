@@ -285,12 +285,8 @@ static size_t radio_protocol_serialize_efm_payload(
     if (!radio_protocol_write_u64_le(frame->t_pkt_us, payload_buf, payload_buf_size, &offset) ||
         !radio_protocol_write_bool(frame->valid, payload_buf, payload_buf_size, &offset) ||
         !radio_protocol_write_float_le(frame->adc1_ch1_diff, payload_buf, payload_buf_size, &offset) ||
-        !radio_protocol_write_float_le(frame->adc1_ch2_sensing, payload_buf, payload_buf_size, &offset) ||
-        !radio_protocol_write_float_le(frame->adc1_ch3_reference, payload_buf, payload_buf_size, &offset) ||
         !radio_protocol_write_float_le(frame->adc1_ch4_breakbeam, payload_buf, payload_buf_size, &offset) ||
         !radio_protocol_write_float_le(frame->adc2_ch1_diff, payload_buf, payload_buf_size, &offset) ||
-        !radio_protocol_write_float_le(frame->adc2_ch2_sensing, payload_buf, payload_buf_size, &offset) ||
-        !radio_protocol_write_float_le(frame->adc2_ch3_reference, payload_buf, payload_buf_size, &offset) ||
         !radio_protocol_write_float_le(frame->adc2_ch4_breakbeam, payload_buf, payload_buf_size, &offset))
     {
         return 0U;

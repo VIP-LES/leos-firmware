@@ -84,12 +84,8 @@ bool cyphal_bridge_efm_to_radio_frame(
     out_frame->t_pkt_us = (uint64_t)to_us_since_boot(get_absolute_time());
     out_frame->valid = msg->valid;
     out_frame->adc1_ch1_diff = msg->adc1_ch1_diff;
-    out_frame->adc1_ch2_sensing = msg->adc1_ch2_sensing;
-    out_frame->adc1_ch3_reference = msg->adc1_ch3_reference;
     out_frame->adc1_ch4_breakbeam = msg->adc1_ch4_breakbeam;
     out_frame->adc2_ch1_diff = msg->adc2_ch1_diff;
-    out_frame->adc2_ch2_sensing = msg->adc2_ch2_sensing;
-    out_frame->adc2_ch3_reference = msg->adc2_ch3_reference;
     out_frame->adc2_ch4_breakbeam = msg->adc2_ch4_breakbeam;
 
     return true;
@@ -194,7 +190,7 @@ void cyphal_bridge_on_efm(
     efm_dsdl_t msg;
     memset(&msg, 0, sizeof(msg));
     size_t payload_size = transfer->payload.size;
-    const int8_t result = leos_efm_ADC_0_1_deserialize_(
+    const int8_t result = leos_efm_ADC_0_2_deserialize_(
         &msg,
         (const uint8_t *)transfer->payload.data,
         &payload_size);

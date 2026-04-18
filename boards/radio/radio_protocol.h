@@ -16,7 +16,7 @@
 #define RADIO_MAX_COMMAND_ARGS 16  // unsure about this num
 
 #define RADIO_SENSOR_GPS_PAYLOAD_SIZE 131U
-#define RADIO_EFM_PAYLOAD_SIZE 41U
+#define RADIO_EFM_PAYLOAD_SIZE 25U
 
 /*
  * On-wire scalar encoding rules for all RF payloads serialized by
@@ -48,13 +48,11 @@
  *   [gps.speed_mps:4][gps.track_deg:4][gps.sats_used:1]
  *   [gps.sats_visible:1][gps.gps_utc_us:8]
  *
- * efm payload layout (41 bytes total):
+ * efm payload layout (25 bytes total):
  *   [t_pkt_us:8]
  *   [efm_valid:1]
- *   [adc1_ch1_diff:4][adc1_ch2_sensing:4][adc1_ch3_reference:4]
- *   [adc1_ch4_breakbeam:4]
- *   [adc2_ch1_diff:4][adc2_ch2_sensing:4][adc2_ch3_reference:4]
- *   [adc2_ch4_breakbeam:4]
+ *   [adc1_ch1_diff:4][adc1_ch4_breakbeam:4]
+ *   [adc2_ch1_diff:4][adc2_ch4_breakbeam:4]
  */
 typedef struct
 {
@@ -125,12 +123,8 @@ typedef struct
     uint64_t t_pkt_us;
     bool valid;
     float adc1_ch1_diff;
-    float adc1_ch2_sensing;
-    float adc1_ch3_reference;
     float adc1_ch4_breakbeam;
     float adc2_ch1_diff;
-    float adc2_ch2_sensing;
-    float adc2_ch3_reference;
     float adc2_ch4_breakbeam;
 } efm_radio_frame_t;
 

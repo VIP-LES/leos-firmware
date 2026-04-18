@@ -24,7 +24,7 @@
 #include "canard.h"
 #include "leos/cyphal/node.h"
 #include <leos/aggregate/LowRate_0_1.h>
-#include <leos/efm/ADC_0_1.h>
+#include <leos/efm/ADC_0_2.h>
 #include "radio_protocol.h"
 
 /*
@@ -35,7 +35,7 @@
  * DSDL message for a received radio command packet.
  */
 typedef leos_aggregate_LowRate_0_1 flight_sensor_gps_dsdl_t;
-typedef leos_efm_ADC_0_1 efm_dsdl_t;
+typedef leos_efm_ADC_0_2 efm_dsdl_t;
 
 typedef struct
 {
