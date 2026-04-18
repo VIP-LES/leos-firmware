@@ -36,7 +36,7 @@ void main() {
 }
 
 void efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2) {
-    for (int ch = 0; ch < 4; ch++) {
+    for (int ch = 0; ch < 4; ch+=3) {
         mcp342x_channel_t channel = (mcp342x_channel_t)ch;
 
         float voltage1;
