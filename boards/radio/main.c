@@ -91,7 +91,7 @@ void main() {
     leos_board_finish_setup(health);
     LOG_INFO("Entering main loop...");
     while (true) {
-        radio_service_irqs();
+        radio_poll();
         leos_net_task();
 
         if (radio_sx1262_packet_available()) {
