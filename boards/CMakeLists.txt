@@ -1,7 +1,7 @@
 add_custom_target(firmware)
 
 # LEOS Sensor
-file(GLOB SENSOR_SOURCES "${CMAKE_CURRENT_LIST_DIR}/sensor/*.c")
+file(GLOB SENSOR_SOURCES "${CMAKE_CURRENT_LIST_DIR}/sensor/*.cpp")
 add_executable(leos-sensor ${SENSOR_SOURCES})
 
 target_link_libraries(leos-sensor

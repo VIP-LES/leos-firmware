@@ -13,6 +13,14 @@ function(leos_add_board TARGET PRETTY_NAME REVISION)
             DSDL_DIR ${PROJECT_SOURCE_DIR}/external/leos-cyphal-types/leos
             DSDL_LOOKUP_DIRS ${PROJECT_SOURCE_DIR}/external/leos-sdk/external/public_regulated_data_types/uavcan
         )
+
+        # Nunavut uses lookup namespaces to resolve imports, but does not emit
+        # code for those imported types. Generate the public uavcan namespace
+        # too so custom types that embed regulated types have their headers.
+        cyphal_generate_types(
+            TARGET ${TARGET}
+            DSDL_DIR ${PROJECT_SOURCE_DIR}/external/leos-sdk/external/public_regulated_data_types/uavcan
+        )
     endif()
 
     # Include the shared C++ platform helpers in board executables.
