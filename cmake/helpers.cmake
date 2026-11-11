@@ -1,20 +1,22 @@
+# The SDK provides DSDL generation as an optional CMake module.
+include(${PROJECT_SOURCE_DIR}/external/leos-sdk/cmake/nunavut.cmake)
+
 # Helper function to setup board settings
 function(leos_add_board TARGET PRETTY_NAME REVISION)
+    cmake_parse_arguments(BOARD "NO_DSDL" "" "" ${ARGN})
     leos_add_executable(${TARGET} ${PRETTY_NAME} ${REVISION})
 
     # Generate our custom Cyphal types
-    cyphal_generate_types(
-        TARGET ${TARGET}
-        DSDL_DIR ${PROJECT_SOURCE_DIR}/external/leos-cyphal-types/leos
-        DSDL_LOOKUP_DIRS ${PROJECT_SOURCE_DIR}/external/leos-sdk/external/public_regulated_data_types/uavcan
-    )
+    if(NOT BOARD_NO_DSDL)
+        cyphal_generate_types(
+            TARGET ${TARGET}
+            DSDL_DIR ${PROJECT_SOURCE_DIR}/external/leos-cyphal-types/leos
+            DSDL_LOOKUP_DIRS ${PROJECT_SOURCE_DIR}/external/leos-sdk/external/public_regulated_data_types/uavcan
+        )
+    endif()
 
-    # Include common platform in board executables
-    target_link_libraries(${TARGET} 
-        common_platform 
-        pico_stdlib 
-        leos_log
-    )
+    # Include the shared C++ platform helpers in board executables.
+    target_link_libraries(${TARGET} pico_stdlib leos_log leos_platform)
 
     # Output Binary Optimization
     if(CMAKE_BUILD_TYPE STREQUAL "Release")

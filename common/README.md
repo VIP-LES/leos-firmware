@@ -1,3 +1,8 @@
 # Common Setup Code for LEOS Stack Modules
 
-This folder is for stack specific setup code that is shared across all of the unified stack PCBs. `board/platform` includes CAN bus initialization helpers that create global instances for Cyphal and CAN devices. 
+This folder holds setup shared by the firmware boards. `can` owns the reusable
+MCP251XFD hardware and controller configuration. `platform` provides the C++
+`leos::platform::init()` and `leos::platform::fatal()` helpers. Each board
+owns its Cyphal node and initializes it with the shared CAN configuration.
+Board applications can include `leos/firmware.hpp` for the common Pico, Cyphal,
+logging, configuration, and platform APIs.
