@@ -14,6 +14,20 @@ target_include_directories(leos-sensor PUBLIC
 
 leos_add_board(leos-sensor "LEOS Sensor" "2.1")
 
+# LEOS Power
+file(GLOB POWER_SOURCES "${CMAKE_CURRENT_LIST_DIR}/power/*.cpp")
+add_executable(leos-power ${POWER_SOURCES})
+
+target_link_libraries(leos-power
+    leos_mcp41100
+)
+
+target_include_directories(leos-power PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/power
+)
+
+leos_add_board(leos-power "LEOS Power" "3.0")
+
 
 # LEOS EFM
 file(GLOB EFM_SOURCES "${CMAKE_CURRENT_LIST_DIR}/efm/*.c")
