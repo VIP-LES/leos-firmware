@@ -1,8 +1,8 @@
-#include "leos/mcp251xfd/config.h"
+#include "common/can_config.h"
 
 leos_mcp251xfd_hw_t can_hw_config = {
     .spi = spi0,
-    .spi_baud = 10000000, // 10 MHz,
+    .spi_baud = 10000000, // 10 MHz
     .pin_sck = 2,
     .pin_mosi = 3,
     .pin_miso = 4,
