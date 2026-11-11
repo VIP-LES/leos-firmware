@@ -16,7 +16,7 @@ function(leos_add_board TARGET PRETTY_NAME REVISION)
     endif()
 
     # Include the shared C++ platform helpers in board executables.
-    target_link_libraries(${TARGET} pico_stdlib leos_log leos_platform)
+    target_link_libraries(${TARGET} pico_stdlib leos_log leos_platform common_can_config leos_cyphal)
 
     # Output Binary Optimization
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
