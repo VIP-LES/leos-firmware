@@ -1,0 +1,7 @@
+.program edge_capture
+
+.wrap_target
+    wait 0 gpio 14
+    wait 1 gpio 14
+    push block
+.wrap

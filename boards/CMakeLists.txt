@@ -6,14 +6,19 @@ add_executable(leos-sensor ${SENSOR_SOURCES})
 
 target_link_libraries(leos-sensor
     leos_purpleboard
+    hardware_pio
+    hardware_dma
 )
 
 target_include_directories(leos-sensor PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/sensor
 )
 
-leos_add_board(leos-sensor "LEOS Sensor" "2.1")
+pico_generate_pio_header(leos-sensor
+    ${CMAKE_CURRENT_LIST_DIR}/sensor/edge_capture.pio
+)
 
+leos_add_board(leos-sensor "LEOS Sensor" "2.1")
 
 # LEOS EFM
 file(GLOB EFM_SOURCES "${CMAKE_CURRENT_LIST_DIR}/efm/*.c")

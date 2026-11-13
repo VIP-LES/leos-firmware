@@ -3,6 +3,7 @@
 
 #include "purpleboard.h"
 #include "cutdown.h"
+#include "geiger.h"
 
 void main() {
     // --- INITIALIZE MODULE ---
@@ -20,16 +21,19 @@ void main() {
         // Set health to caution - sensors are not critical devices.
         health = BOARD_HEALTH_CAUTION;
     } else {
+        LOG_INFO("Purpleboard init success!");
         pb_initialized = true;
     }
 
-
     leos_board_finish_setup(health);
+
+    geiger_init();
 
     // --- MAIN LOOP ---
     LOG_INFO("Entering main loop...");
     while (true) {
-        leos_net_task();
+        // leos_net_task(); temporarily moved into purpleboard_task()
+        geiger_task();
         purpleboard_task();
         cutdown_task();
     }

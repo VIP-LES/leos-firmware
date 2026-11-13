@@ -10,6 +10,8 @@
 
 // from efm.c
 void efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2);
+void fake_efm_task(mcp342x_dev_t *adc1, mcp342x_dev_t *adc2);
+
 
 void main() {
     // --- INITIALIZE MODULE ---
@@ -38,6 +40,6 @@ void main() {
     LOG_INFO("Entering main loop...");
     while (true) {
         leos_net_task();
-        efm_task(&adc1, &adc2);
+        fake_efm_task(&adc1, &adc2);
     }
 }

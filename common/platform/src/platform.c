@@ -19,7 +19,7 @@ void mcp_read_pending_cb(MCP251XFD* dev, void *node_ref) {
 }
 
 int leos_board_init() {
-    leos_log_init_console(ULOG_INFO_LEVEL);
+    leos_log_init_console(ULOG_DEBUG_LEVEL);
 
     // Setup CANBus Communication
     eERRORRESULT err;
@@ -45,7 +45,7 @@ int leos_board_init() {
 
 void leos_net_task() {
     leos_mcp251xfd_task(&leos_can);
-    leos_cyphal_task(&leos_node);
+    while (leos_cyphal_task(&leos_node));
 }
 
 // Locks us in an infinite loop with a specific blink pattern
