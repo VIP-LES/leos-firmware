@@ -18,6 +18,7 @@ peripheral::Mcp41100 adj_output{{spi1, 1000000u, 10u, 11u, 13u}};
 
 static void on_request(cyphal::Service& service, const cyphal::Request& transfer, void*) {
     std::uint8_t status = leos_power_VariableVoltage_Response_0_1_ERR;
+    LOG_INFO("voltage request received: size=%zu", transfer.payload.size);
     if (transfer.payload.size == 1U) {
         const auto code = *static_cast<const std::uint8_t*>(transfer.payload.data);
         if (adj_output.setWiper(code)) {
@@ -39,16 +40,16 @@ cyphal::Service voltage_service{
 };
 
 int main() {
-    platform::init();
+    platform::init(ULOG_DEBUG_LEVEL);
 
     // Initialize adjustable output potentiometer and set default voltage
     adj_output.init();
-    sleep_ms(10);
+    sleep_ms(3000);
     if (adj_output.setWiper(Voltage::V5_04)) {
         LOG_INFO("Set adjustable output to default 5V.");
     }
 
-    const eERRORRESULT result = node.init(can_config, 11);
+    const eERRORRESULT result = node.init(can_config, LEOS_POWER_NODE_ID);
     if (result == ERR_OK) {
         if (voltage_service.serve()) 
             platform::setup_complete(node, Health::Nominal);
@@ -61,6 +62,8 @@ int main() {
         // The power module stays active even without CAN communication.
         platform::setup_complete();
     }
+
+    int x = 0;
 
     while (true) {
         node.poll();
