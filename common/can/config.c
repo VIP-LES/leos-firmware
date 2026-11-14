@@ -52,7 +52,8 @@ leos_mcp251xfd_config_t can_config = {
                   MCP251XFD_CAN_PROTOCOL_EXCEPT_AS_FORM_ERROR |
                   MCP251XFD_CANFD_USE_ISO_CRC |
                   MCP251XFD_CANFD_DONT_USE_RRS_BIT_AS_SID11,
-    .irq_flags = MCP251XFD_INT_RX_EVENT | MCP251XFD_INT_BUS_ERROR_EVENT,
+    .irq_flags = MCP251XFD_INT_RX_EVENT | MCP251XFD_INT_BUS_ERROR_EVENT |
+                 MCP251XFD_INT_TX_ATTEMPTS_EVENT,
     .initial_mode = MCP251XFD_NORMAL_CANFD_MODE,
 
     .fifo = fifo_configs,

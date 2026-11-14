@@ -35,6 +35,13 @@ add_executable(leos-efm ${EFM_SOURCES})
 
 target_link_libraries(leos-efm
     hardware_spi
+    pico_multicore
+    pico_util
+)
+
+# Keep optional USB diagnostics from stalling CAN service if the host stops reading.
+target_compile_definitions(leos-efm PRIVATE
+    PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000
 )
 
 target_include_directories(leos-efm PUBLIC
