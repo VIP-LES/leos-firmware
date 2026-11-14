@@ -30,11 +30,11 @@ leos_add_board(leos-power "LEOS Power" "3.0")
 
 
 # LEOS EFM
-file(GLOB EFM_SOURCES "${CMAKE_CURRENT_LIST_DIR}/efm/*.c")
+file(GLOB EFM_SOURCES "${CMAKE_CURRENT_LIST_DIR}/efm/*.cpp")
 add_executable(leos-efm ${EFM_SOURCES})
 
 target_link_libraries(leos-efm
-    leos_mcp342x
+    hardware_spi
 )
 
 target_include_directories(leos-efm PUBLIC
