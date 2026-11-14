@@ -13,7 +13,7 @@ leos_mcp251xfd_hw_t can_hw_config = {
 MCP251XFD_FIFO fifo_configs[] = {
     {
         .Name = MCP251XFD_TXQ,
-        .Size = MCP251XFD_FIFO_8_MESSAGE_DEEP,
+        .Size = MCP251XFD_FIFO_1_MESSAGE_DEEP,
         .Payload = MCP251XFD_PAYLOAD_64BYTE,
         .Attempts = MCP251XFD_THREE_ATTEMPTS, // Will retry enough to make it past arbitration, but won't deadlock when only device on bus.
         .Priority = MCP251XFD_MESSAGE_TX_PRIORITY16,
